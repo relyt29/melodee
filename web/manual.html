@@ -373,7 +373,7 @@
 
         <section id="fm6">
           <h3>FM6</h3>
-          <p class="small">Restates msfa from <a href="https://github.com/asb2m10/dexed" target="_blank" rel="noopener">Dexed</a> (Google Inc., Pascal Gauthier).</p>
+          <p class="small">Uses msfa from <a href="https://github.com/asb2m10/dexed" target="_blank" rel="noopener">Dexed</a> (Google Inc., Pascal Gauthier).</p>
           <p>Six-operator FM (Dexed / DX7–compatible): 32 algorithms with an on-screen chart, per-operator frequency, levels, envelopes and scaling, pitch envelope, LFO, and controller / portamento settings. On operator pages, <kbd>PRESETS</kbd> picks the operator; black keys do the same under a held <kbd>EDIT</kbd>. Native slots <strong>F001–F064</strong>; DX7 librarians can send 32-voice banks over USB into F001–F032 or F033–F064.</p>
           <div class="shots">
             <figure class="shot"><img src="ref_map_fm6.png" alt="FM6 section map with operators" width="240" height="240"><figcaption>Section map; black keys pick operators.</figcaption></figure>
@@ -390,7 +390,7 @@
               <tr><td>PITCH EG</td><td>R1–R4: pitch envelope rates.</td></tr>
               <tr><td>PITCH LV</td><td>L1–L4: pitch envelope levels.</td></tr>
               <tr><td>FM LFO</td><td>WAVE (TRI / SAWDN / SAWUP / SQR / SIN / S&amp;H), SPEED, DELAY, KSYNC (key sync).</td></tr>
-              <tr><td>FM LFO 2</td><td>PMD (pitch mod depth), AMD (amp mod depth), PMS (pitch mod sensitivity 0–7).</td></tr>
+              <tr><td>FM LFO 2</td><td>PMD (pitch mod depth), AMD (how much the LFO wobbles amplitude — global amp-mod depth), PMS (pitch mod sensitivity 0–7).</td></tr>
             </tbody>
           </table>
           <h4>Per operator</h4>
@@ -398,13 +398,15 @@
             <thead><tr><th>Page</th><th>Controls</th></tr></thead>
             <tbody>
               <tr><td>FREQ</td><td>CRS (coarse ratio, or Hz in FIXED), FINE, DTN (detune ±7), MODE (RATIO / FIXED).</td></tr>
-              <tr><td>OUT</td><td>OUT (output level 0–99), VEL (velocity sensitivity 0–7), AMS (amp-mod sensitivity 0–3), ON (operator on/off).</td></tr>
+              <tr><td>OUT</td><td>OUT (output level 0–99), VEL (velocity sensitivity 0–7), AMS (how much this operator follows amp mod, 0–3; see below), ON (operator on/off).</td></tr>
               <tr><td>EG RATE</td><td>R1–R4: envelope rates (0–99).</td></tr>
               <tr><td>EG LVL</td><td>L1–L4: envelope levels (0–99).</td></tr>
-              <tr><td>SCALE</td><td>BRK (break point note), LDEP / RDEP (level scaling depth left / right), RSCL (rate scaling 0–7).</td></tr>
-              <tr><td>CURVE</td><td>LCRV / RCRV: scaling curve (−LIN / −EXP / +EXP / +LIN).</td></tr>
+              <tr><td>SCALE</td><td>Keyboard level and rate scaling. BRK (break point — at this note, level is unchanged), LDEP / RDEP (how strongly level changes left / right of BRK, 0–99; 0 = off), RSCL (rate scaling 0–7: higher keys run the envelope faster).</td></tr>
+              <tr><td>CURVE</td><td>LCRV / RCRV: shape and direction of level scaling on each side of BRK (−LIN / −EXP lower the operator’s level as you move away; +EXP / +LIN raise it). Depth (LDEP / RDEP) sets how much; the curve’s sign sets which way.</td></tr>
             </tbody>
           </table>
+          <p>AMS is not the operator envelope (that’s EG RATE / EG LVL). It’s DX7-style <em>amplitude modulation sensitivity</em>: how strongly this operator’s level follows amp mod from the LFO’s AMD, or from controllers routed to amplitude (wheel / breath / aftertouch with destination A). AMD sets how much amp wobble exists; AMS (0 = ignore, 3 = strongest) sets whether <em>this</em> operator hears it. Use it for tremolo on a carrier, or put AMS on a modulator so the LFO breathes the brightness instead of the overall volume.</p>
+          <p>SCALE and CURVE are DX7-style keyboard level scaling: they raise or lower that operator’s output as you play above or below BRK. Classic use: −LIN or −EXP on the right so high notes get quieter, or so a modulator thins out and the sound gets less bright up the keyboard.</p>
           <h4>Controllers (per track, saved with the project)</h4>
           <table>
             <thead><tr><th>Page</th><th>Controls</th></tr></thead>
