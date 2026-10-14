@@ -1,6 +1,7 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: GPL-3.0-only
-     Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments -->
+     Copyright (C) 2026 Kerem Kilic (Ellic Studio)
+     Portions Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -84,7 +85,7 @@
   <p id="status"></p>
   <pre id="log"></pre>
   <p class="small">Melodee by Ellic Studio, based on <a href="https://github.com/hugelton/Felucca" target="_blank" rel="noopener" style="color:inherit">Felucca</a>
-    by Leo Kuroshita (@kurogedelic), <a href="https://hugelton.com" target="_blank" rel="noopener" style="color:inherit">Hügelton Instruments</a>, with its CrispyZebra waveforms, drum voices, Sample Pack and Fukiai icons (MIT).<br>
+    by Leo Kuroshita (@kurogedelic), <a href="https://hugelton.com" target="_blank" rel="noopener" style="color:inherit">Hügelton Instruments</a>, with its CrispyZebra waveforms and Fukiai icons (MIT).<br>
     Font: Inter Tight (The Inter Project Authors, SIL OFL 1.1). Samples: Versilian Studios VSCO-2 Community Edition and VCSL (CC0 1.0).<br>
     FM6 engine: msfa from Dexed (Google Inc., Pascal Gauthier, Apache-2.0). The package also holds three JieLi AC79 SDK files, uboot.boot, cfg_tool.bin and eq_cfg_hw.bin (JieLi Technology, Apache-2.0). <a href="../../firmware/LICENSING.md" style="color:inherit">Licences</a>: <a href="../../firmware/LICENSE" style="color:inherit">GPL-3.0</a>, <a href="../../firmware/LICENSES/Apache-2.0.txt" style="color:inherit">Apache-2.0</a>, <a href="../../firmware/LICENSES/" style="color:inherit">all</a>.<br>
     M-VAVE and FM-1 are trademarks of their respective owners.<br>
@@ -92,7 +93,8 @@
 </main>
 <script type="module">
 // SPDX-License-Identifier: GPL-3.0-only
-// Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
+// Copyright (C) 2026 Kerem Kilic (Ellic Studio)
+// Portions Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
 //
 // FM-1 .fwsc packages in the browser: the package identity and the image the
 // device reads during an update.
@@ -349,7 +351,8 @@ async function buildMelodeePackage(stockBytes, appBytes, product) {
 }
 
 // SPDX-License-Identifier: GPL-3.0-only
-// Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
+// Copyright (C) 2026 Kerem Kilic (Ellic Studio)
+// Portions Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
 //
 // The FM-1 USB-MIDI update protocol over WebMIDI (after tools/fm1_install.py).
 // Step 1: the running firmware (official
@@ -538,7 +541,7 @@ class Updater {
     const ota = await this.waitFor((id) => id.model === "ota-" + model, 30000);
     if (!ota) throw fail("noloader", "the update loader did not appear. Replug the USB cable and press Install again: the device stays in update mode until it is finished.");
     const s2 = await this.write(ota, image, step);
-    if (!s2.finished) throw fail(s2.lost ? "lost" : "stopped", `the loader ${s2.lost ? "was disconnected" : "stopped"} after ${s2.served} requests. Replug and press Install again to resume.`);
+    if (!s2.finished) throw fail(s2.lost ? "lost" : "stopped", `the loader ${s2.lost ? "was disconnected" : "stopped"} after ${s2.served} requests. Reconnect and press Install again. With boot-protected firmware, power on holding OCT− alone if needed; three short key-light flashes mean update mode.`);
     step("reboot");
     await sleep(3000);
     const back = await this.waitFor((id) => !IS_OTA(id), 40000);
@@ -580,7 +583,8 @@ class Updater {
 }
 
 // SPDX-License-Identifier: GPL-3.0-only
-// Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
+// Copyright (C) 2026 Kerem Kilic (Ellic Studio)
+// Portions Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
 // Local, complete musical archives. Requests name whitelisted objects, never flash addresses.
 const BACKUP_IDS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 32, 33, 34];   // 8: the FM6 patch bank (firmware with FM6)
 const BACKUP_IDS_V1 = BACKUP_IDS.filter((id) => id !== 8);              // firmware before FM6, and its archives
@@ -792,48 +796,48 @@ class BackupConnection {
 
 const $ = (id) => document.getElementById(id);
 const TEXT = {
-  intro: "Connect the FM-1 by USB. (Works in Chrome or Edge.)",
-  warn: "Do not unplug the USB cable while writing.",
-  install: "Install",
-  releaseTitle: "Stable release", latest: "Latest", fallbackTitle: "Advanced / Hardware fallback",
-  rcTitle: "Release candidate", "rc-dual": "RC — dual core", "rc-single": "RC — single core",
-  "rc-dualTag": "release candidate, dual core", "rc-singleTag": "release candidate, single core",
-  rcWhy: "Preview of the next release, available for testing. Choose Standard to return to stable.",
-  nightlyTitle: "Nightly (next)", "nightly-dual": "Nightly — dual core",
-  "nightly-single": "Nightly — single core", "nightly-dualTag": "nightly, dual core", "nightly-singleTag": "nightly, single core",
-  nightlyWhy: "Development builds from next. Save a complete backup in the editor before installing. Choose Standard to return to the release.",
-  dual: "Standard (dual core)", single: "Single core", dualTag: "standard", singleTag: "single core",
-  singleWhy: "The single-core build is for FM-1s that crash with the standard build (a red MELODEE CRASH screen, freezes, or restarts into update mode). It never starts the FM-1's second core, which the official firmware does not use either. PROPHET then plays up to five voices instead of eight, and heavy FM6 and PROPHET sounds reach the CPU limit sooner. To go back, choose Standard and install again.",
-  editor: "Editor (after installing: edit sounds and sequences from the computer)",
-  direct: "Connect the USB cable directly to the computer. No probe or Transporter is needed.",
-  brick: "If the FM-1 does not start after installation, follow the recovery steps for its USB mode (including official V15 recovery):",
-  recoveryLink: "USB recovery instructions and downloads",
-  beta: "Please report Melodee problems on GitHub. The author accepts no responsibility if your FM-1 is damaged or misbehaves because of this custom firmware. Use it at your own risk.",
-  back: "Get official FM-1 V15 from M-VAVE and select the unmodified FM-1.fwsc. The browser validates it locally; it is not sent to a server.",
-  stockTitle: "Return to official V15", stockFile: "Official FM-1.fwsc", stockGo: "Back up and return to official V15",
-  stockBackup: "Current music, saved music, sound banks, samples and settings are saved first. If backups are unavailable, update Melodee or choose to skip the backup and accept possible data loss. To restore an archive later, reinstall Melodee and use the editor.",
-  stockSkipBackup: "Skip backup (Melodee music, sounds and settings may be lost)",
-  stockGoNoBackup: "Return to official V15 without backup",
-  stockConfirmNoBackup: "Return to official V15 without creating a backup? Melodee music, sounds and settings may be lost and cannot be restored without a backup. Continue?",
-  stockRecovery: "Resume an interrupted update: I already saved a complete backup to this computer",
-  stockValid: "Official V15 verified", stockConfirm: "Has the complete backup file been saved to this computer? Continue to return to official V15. Official V15 cannot open Melodee music.",
-  stockNeedBackup: "An update loader cannot export a backup. Select resume if you already saved a complete backup, or choose Skip backup to continue and accept possible data loss.",
-  stockUnsupported: "This Melodee does not support complete backups. Install the current Melodee first, or select Skip backup to accept possible data loss and try again.",
-  backup: "Saving complete backup ", stockError: "Cannot validate official firmware: ",
-  nomidi: "This browser cannot do it. Open the page in Chrome or Edge.", loadfail: "Could not load: ",
-  start: "Starting", verify: "Verifying", loader: "Switching to update mode", write: "Writing",
-  reboot: "Restarting", done: "Done", stopped: "Stopped. Replug the USB cable and press Install again.",
-  error: "Error: ",
-  denied: "MIDI (SysEx) access was not allowed. Allow MIDI in the site settings (address bar) and press Install again.",
-  notfound: "FM-1 not found. Check the USB cable (a data cable), close other apps that use MIDI, and press Install again.",
-  model: "The connected device is not an FM-1.",
-  lost: "The USB connection was lost. Replug it and press Install again.",
-  noloader: "The FM-1 in update mode was not found. Replug the USB cable and press Install again (it stays in update mode until it is finished).",
-  noreturn: "The FM-1 did not come back. Power-cycle it.",
-  mismatch: "Written, but the FM-1 reports another version: ",
-  badpkg: "The file to install is damaged. Reload the page.",
-  leave: "Writing. Do not close the page.",
-  license: "GPL-3.0, no warranty. Source:",
+    intro: "Connect the FM-1 by USB. (Works in Chrome or Edge.)",
+    warn: "Do not unplug the USB cable while writing.",
+    install: "Install", other: "日本語",
+    releaseTitle: "Stable release", latest: "Latest", fallbackTitle: "Advanced / Hardware fallback",
+    rcTitle: "Release candidate", "rc-dual": "RC — dual core", "rc-single": "RC — single core",
+    "rc-dualTag": "release candidate, dual core", "rc-singleTag": "release candidate, single core",
+    rcWhy: "Preview of the next release, available for testing. Choose Standard to return to stable.",
+    nightlyTitle: "Nightly (next)", "nightly-dual": "Nightly — dual core",
+    "nightly-single": "Nightly — single core", "nightly-dualTag": "nightly, dual core", "nightly-singleTag": "nightly, single core",
+    nightlyWhy: "Development builds from next. Save a complete backup in the editor before installing. Choose Standard to return to the release.",
+    dual: "Standard (dual core)", single: "Single core", dualTag: "standard", singleTag: "single core",
+    singleWhy: "The single-core build is for FM-1s that crash with the standard build (a red MELODEE CRASH screen, freezes, or restarts into update mode). It never starts the FM-1's second core, which the official firmware does not use either. PROPHET then plays up to five voices instead of eight, and heavy FM6 and PROPHET sounds reach the CPU limit sooner. To go back, choose Standard and install again.",
+    editor: "Editor (after installing: edit sounds and sequences from the computer)",
+    direct: "Connect the USB cable directly to the computer. No probe or Transporter is needed.",
+    brick: "If an update is interrupted on firmware with boot protection, switch the FM-1 on again (or hold OCT− alone while switching on). Three short key-light flashes mean update mode: reconnect USB and press Install again. Older firmware and one long flash need the USB recovery instructions:",
+    recoveryLink: "USB recovery instructions and downloads",
+    beta: "Please report Melodee problems on GitHub. The author accepts no responsibility if your FM-1 is damaged or misbehaves because of this custom firmware. Use it at your own risk.",
+    back: "Get official FM-1 V15 from M-VAVE and select the unmodified FM-1.fwsc. The browser validates it locally; it is not sent to a server.",
+    stockTitle: "Return to official V15", stockFile: "Official FM-1.fwsc", stockGo: "Back up and return to official V15",
+    stockBackup: "Current music, saved music, sound banks, samples and settings are saved first. If backups are unavailable, update Melodee or choose to skip the backup and accept possible data loss. To restore an archive later, reinstall Melodee and use the editor.",
+    stockSkipBackup: "Skip backup (Melodee music, sounds and settings may be lost)",
+    stockGoNoBackup: "Return to official V15 without backup",
+    stockConfirmNoBackup: "Return to official V15 without creating a backup? Melodee music, sounds and settings may be lost and cannot be restored without a backup. Continue?",
+    stockRecovery: "Resume an interrupted update: I already saved a complete backup to this computer",
+    stockValid: "Official V15 verified", stockConfirm: "Has the complete backup file been saved to this computer? Continue to return to official V15. Official V15 cannot open Melodee music.",
+    stockNeedBackup: "An update loader cannot export a backup. Select resume if you already saved a complete backup, or choose Skip backup to continue and accept possible data loss.",
+    stockUnsupported: "This Melodee does not support complete backups. Install the current Melodee first, or select Skip backup to accept possible data loss and try again.",
+    backup: "Saving complete backup ", stockError: "Cannot validate official firmware: ",
+    nomidi: "This browser cannot do it. Open the page in Chrome or Edge.", loadfail: "Could not load: ",
+    start: "Starting", verify: "Verifying", loader: "Switching to update mode", write: "Writing",
+    reboot: "Restarting", done: "Done", stopped: "Stopped. Replug the USB cable and press Install again.",
+    error: "Error: ",
+    denied: "MIDI (SysEx) access was not allowed. Allow MIDI in the site settings (address bar) and press Install again.",
+    notfound: "FM-1 not found. Check the USB cable (a data cable), close other apps that use MIDI, and press Install again.",
+    model: "The connected device is not an FM-1.",
+    lost: "The USB connection was lost. Replug it and press Install again.",
+    noloader: "The FM-1 in update mode was not found. Replug the USB cable and press Install again (it stays in update mode until it is finished).",
+    noreturn: "The FM-1 did not come back. Power-cycle it.",
+    mismatch: "Written, but the FM-1 reports another version: ",
+    badpkg: "The file to install is damaged. Reload the page.",
+    leave: "Writing. Do not close the page.",
+    license: "GPL-3.0, no warranty. Source:",
 };
 const t = (k) => TEXT[k];
 let lastKey = null, lastArg = "";
@@ -857,7 +861,7 @@ const selection = () => {     /* the release, or a channel ("nightly-dual": meta
 const ready = () => { lastKey = "ready"; $("status").textContent = `Melodee ${selection().channel.version} (${t(build() + "Tag")})`; };
 const log = (t) => { const box = $("log"); box.textContent += t + "\n"; box.scrollTop = box.scrollHeight; };
 let image = null;
-const meta = {"version": "1.3.1", "product": "FM-1_91031", "pkg": {"dual": "../../firmware/melodee-1.3.1.fwsc", "single": "../../firmware/melodee-1.3.1-1core.fwsc"}, "nightly": {"version": "next-61df454", "product": "FM-1_900", "branch": "next", "commit": "61df454f84a43b02815a90c2285c22c7fe914ce0", "builtAt": "2026-10-14T17:41:45Z", "pkg": {"dual": "../../firmware/melodee-nightly.fwsc", "single": "../../firmware/melodee-nightly-1core.fwsc"}}, "rc": null, "releases": [{"version": "1.3.1", "product": "FM-1_91031", "pkg": {"dual": "../../firmware/melodee-1.3.1.fwsc", "single": "../../firmware/melodee-1.3.1-1core.fwsc"}}]};
+const meta = {"version": "1.3.1", "product": "FM-1_91031", "pkg": {"dual": "../../firmware/melodee-1.3.1.fwsc", "single": "../../firmware/melodee-1.3.1-1core.fwsc"}, "nightly": {"version": "next-2a384b6", "product": "FM-1_900", "branch": "next", "commit": "2a384b6c4229149d6335cdbc5f37e3c47b24ad06", "builtAt": "2026-10-14T20:47:40Z", "pkg": {"dual": "../../firmware/melodee-nightly.fwsc", "single": "../../firmware/melodee-nightly-1core.fwsc"}}, "rc": null, "releases": [{"version": "1.3.1", "product": "FM-1_91031", "pkg": {"dual": "../../firmware/melodee-1.3.1.fwsc", "single": "../../firmware/melodee-1.3.1-1core.fwsc"}}]};
 function releaseOptions() {
   const selected = $("release").value || meta.version;
   $("release").replaceChildren(...(meta.releases || [meta]).map(r => {
