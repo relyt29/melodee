@@ -861,7 +861,7 @@ const selection = () => {     /* the release, or a channel ("nightly-dual": meta
 const ready = () => { lastKey = "ready"; $("status").textContent = `Melodee ${selection().channel.version} (${t(build() + "Tag")})`; };
 const log = (t) => { const box = $("log"); box.textContent += t + "\n"; box.scrollTop = box.scrollHeight; };
 let image = null;
-const meta = {"version": "1.3.1", "product": "FM-1_91031", "pkg": {"dual": "../../firmware/melodee-1.3.1.fwsc", "single": "../../firmware/melodee-1.3.1-1core.fwsc"}, "nightly": {"version": "next-2a384b6", "product": "FM-1_900", "branch": "next", "commit": "2a384b6c4229149d6335cdbc5f37e3c47b24ad06", "builtAt": "2026-10-14T20:47:40Z", "pkg": {"dual": "../../firmware/melodee-nightly.fwsc", "single": "../../firmware/melodee-nightly-1core.fwsc"}}, "rc": null, "releases": [{"version": "1.3.1", "product": "FM-1_91031", "pkg": {"dual": "../../firmware/melodee-1.3.1.fwsc", "single": "../../firmware/melodee-1.3.1-1core.fwsc"}}]};
+const meta = {"version": "1.3.1", "product": "FM-1_91031", "pkg": {"dual": "../../firmware/melodee-1.3.1.fwsc", "single": "../../firmware/melodee-1.3.1-1core.fwsc"}, "nightly": {"version": "next-4cadcbe", "product": "FM-1_900", "branch": "next", "commit": "4cadcbe5a3b8b0e2be15bdce2cd46031b5e9cd78", "builtAt": "2026-10-14T21:03:06Z", "pkg": {"dual": "../../firmware/melodee-nightly.fwsc", "single": "../../firmware/melodee-nightly-1core.fwsc"}}, "rc": null, "releases": [{"version": "1.3.1", "product": "FM-1_91031", "pkg": {"dual": "../../firmware/melodee-1.3.1.fwsc", "single": "../../firmware/melodee-1.3.1-1core.fwsc"}}]};
 function releaseOptions() {
   const selected = $("release").value || meta.version;
   $("release").replaceChildren(...(meta.releases || [meta]).map(r => {
