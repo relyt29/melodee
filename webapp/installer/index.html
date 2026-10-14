@@ -28,7 +28,9 @@
   #status { margin-top: 16px; min-height: 1.6em; }
   .small { color: var(--dim); font-size: 13px; }
   progress { width: 100%; height: 4px; margin-top: 16px; }
-  pre { color: var(--dim); font-size: 12px; white-space: pre-wrap; margin-top: 16px; }
+  pre { color: var(--dim); font-size: 12px; white-space: pre-wrap; margin-top: 16px; max-height: 200px; overflow-y: auto; overflow-wrap: anywhere; }
+  select { font: inherit; max-width: 100%; padding: 4px; background: var(--bg); color: var(--fg); }
+  details { margin-bottom: 16px; }
 </style>
 </head>
 <body>
@@ -47,23 +49,25 @@
   <p class="small" data-t="beta"></p>
   <p class="small"><span data-t="brick"></span>
     <a href="https://github.com/keremimo/melodee/blob/next/docs/RECOVERY.md" target="_blank" rel="noopener" style="color:inherit" data-t="recoveryLink"></a></p>
-  <p><label><input type="radio" name="build" id="build-dual" checked> <span data-t="dual"></span></label><br>
-    <label><input type="radio" name="build" id="build-single"> <span data-t="single"></span></label></p>
-  <p class="small" data-t="singleWhy"></p>
+  <p><label><span data-t="releaseTitle"></span><br><select id="release"></select></label></p>
+  <p><label><input type="radio" name="build" id="build-dual" checked> <span data-t="dual"></span></label></p>
+  <details id="fallback-options">
+    <summary data-t="fallbackTitle"></summary>
+    <p><label><input type="radio" name="build" id="build-single"> <span data-t="single"></span></label></p>
+    <p class="small" data-t="singleWhy"></p>
+  </details>
+  <section id="rc-options" hidden>
+    <p><strong data-t="rcTitle"></strong> · <span id="rc-version"></span></p>
+    <p><label><input type="radio" name="build" id="build-rc-dual"> <span data-t="rc-dual"></span></label><br>
+      <label><input type="radio" name="build" id="build-rc-single"> <span data-t="rc-single"></span></label></p>
+    <p class="small" data-t="rcWhy"></p>
+  </section>
   <section id="nightly-options" hidden>
     <p><strong data-t="nightlyTitle"></strong></p>
     <p><label><input type="radio" name="build" id="build-nightly-dual"> <span data-t="nightly-dual"></span></label><br>
       <label><input type="radio" name="build" id="build-nightly-single"> <span data-t="nightly-single"></span></label></p>
     <p class="small" data-t="nightlyWhy"></p>
     <p class="small" id="nightly-info"></p>
-  </section>
-  <section id="synth-options" hidden>
-    <p><strong data-t="synthTitle"></strong></p>
-    <p><label><input type="radio" name="build" id="build-synth-dual"> <span data-t="synth-dual"></span></label><br>
-      <label><input type="radio" name="build" id="build-synth-single"> <span data-t="synth-single"></span></label></p>
-    <p class="small" data-t="synthWhy"></p>
-    <p class="small" id="synth-info"></p>
-    <p class="small"><a id="synth-editor" href="../synth-editor/" style="color:inherit" data-t="synthEditor"></a></p>
   </section>
   <p><button id="go" disabled data-t="install"></button></p>
   <details style="margin-top:24px">
@@ -584,9 +588,10 @@ const BACKUP_IDS_BANKS = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 const BACKUP_IDS_CZ = Array.from({length:17},(_,i)=>i);
 const BACKUP_IDS_OWN = Array.from({length:21},(_,i)=>i);
 const BACKUP_IDS_NATIVE = Array.from({length:23},(_,i)=>i);
+const BACKUP_IDS_SHARED = Array.from({length:29},(_,i)=>i);
 const BACKUP_IDS_P5 = Array.from({length:28},(_,i)=>i);
-const maxSize = id => id >= 32 ? 81920 : (id === 0 || (id >= 2 && id <= 5)) ? 27904 : id>=23&&id<=27?3600:3840;
-const idsOf = (n) => (n === BACKUP_IDS.length ? BACKUP_IDS : n === BACKUP_IDS_V1.length ? BACKUP_IDS_V1 : n === 9 ? BACKUP_IDS_BANKS : n === 17 ? BACKUP_IDS_CZ : n === 21 ? BACKUP_IDS_OWN : n === 23 ? BACKUP_IDS_NATIVE : n === 28 ? BACKUP_IDS_P5 : null);
+const maxSize = id => id >= 32 ? 81920 : (id === 0 || (id >= 2 && id <= 5)) ? 27904 : 3840;
+const idsOf = (n) => (n === BACKUP_IDS.length ? BACKUP_IDS : n === BACKUP_IDS_V1.length ? BACKUP_IDS_V1 : n === 9 ? BACKUP_IDS_BANKS : n === 17 ? BACKUP_IDS_CZ : n === 21 ? BACKUP_IDS_OWN : n === 23 ? BACKUP_IDS_NATIVE : n === 28 ? BACKUP_IDS_P5 : n===29?BACKUP_IDS_SHARED:null);
 const BACKUP_CMD = { LIST: 65, GET: 66, PUT: 67 };
 const BACKUP_CHUNK = 256;
 const bkU32 = (n) => Array.from({ length: 5 }, (_, i) => (n >>> (i * 7)) & (i === 4 ? 15 : 127));
@@ -652,7 +657,9 @@ function readBackup(file) {
       throw new Error("Invalid backup object");
     const bytes = Uint8Array.from(atob(o.data), (c) => c.charCodeAt(0));
     if (bytes.length !== o.size || bkCrc(bytes) !== o.crc) throw new Error("Backup checksum mismatch");
-    if(o.id>=23&&o.id<=27&&o.size){
+    const shared=o.id>=6&&o.id<=28&&o.id!==8&&o.size===3716&&new DataView(bytes.buffer).getUint32(0,true)===0x32425055;
+    if(shared){const v=new DataView(bytes.buffer);if(v.getUint16(4,true)!==206||v.getUint16(6,true)!==18)throw Error("Invalid shared preset bank");}
+    if(o.id>=23&&o.id<=27&&o.size&&!shared){
       if(o.size!==3600)throw Error("Invalid Prophet bank size");const v=new DataView(bytes.buffer),used=v.getUint32(4,true),fav=v.getUint32(8,true),mask=(1<<(o.id===27?24:26))-1;
       if(v.getUint32(0,true)!==0x31553550||(used&~mask)||(fav&~(mask|(o.id===23?0x80000000:0))))throw Error("Invalid Prophet bank");
       for(let k=0;k<26;k++)if(used>>k&1){const b=bytes.subarray(12+k*138,12+(k+1)*138);if(![128,133].includes(b[133])||![49,50].includes(b[134])||![2,3].includes(b[135])||b[135]===2&&(b[136]>9||b[137]>39))throw Error("Invalid Prophet program");}
@@ -662,8 +669,8 @@ function readBackup(file) {
       if(v.getUint32(0,true)!==0x314d464e || v.getUint16(4,true)!==1 || v.getUint16(6,true)!==16 || used>>>16)throw new Error("Invalid native FM6 preset object");
       for(let k=0;k<16;k++)if(used>>k&1)if(bytes.subarray(12+k*128,12+(k+1)*128).some(x=>x>127))throw new Error("Invalid native DX7 voice");
     }
-    if(o.id>=21 && o.id<=22 && o.size && o.size!==2060)throw new Error("Invalid native FM6 preset size");
-    if(o.id>=9 && o.id<=16 && o.size){
+    if(o.id>=21 && o.id<=22 && o.size && o.size!==2060 && !shared)throw new Error("Invalid native FM6 preset size");
+    if(o.id>=9 && o.id<=16 && o.size && !shared){
       if(o.size!==2332)throw new Error("Invalid CZ bank size");const v=new DataView(bytes.buffer),used=v.getUint32(8,true);
       if(v.getUint32(0,true)!==0x42435a43 || ![1,2].includes(v.getUint16(4,true)) || v.getUint16(6,true)!==16 || used>>>16 || !bytes[12] || Array.from(bytes.slice(12,28)).some(x=>x>126 || x>0&&x<32))throw new Error("Invalid CZ bank");
       for(let i=0;i<16;i++)if(used>>i&1){const b=bytes.subarray(28+i*144,28+(i+1)*144);if((b[0]&240)||(b[0]>>2)>2||b[1]>1||(b[2]&3)||b[3]>47||[0,57].some(j=>(b[16+j]&15)>9||(b[16+j]>>4)>14||b[18+j]>9||[20,37,54].some(k=>b[k+j]&8)))throw new Error("Invalid CZ bank tone");}
@@ -721,6 +728,9 @@ async function restoreBackup(request, file, onProgress = () => {}) {
     await ask([BACKUP_CMD.PUT, [3, o.id]]);
     if (a[2] === 1) throw new Error("This backup holds an older format. Restore it with Melodee 1.2 first.");
     bkCheck(a[2]);
+  }
+  if(archive.objects.length===28 && supported.some(o=>o.id===28)){
+    await put([0,28,...bkU32(0),...bkU32(0)]);await put([2,28]);
   }
   // Restore live music last. Other objects commit individually; a disconnect can leave a partial restore.
   for (const o of [...archive.objects.slice(2), archive.objects[1], archive.objects[0]]) {
@@ -784,21 +794,21 @@ const $ = (id) => document.getElementById(id);
 const TEXT = {
   intro: "Connect the FM-1 by USB. (Works in Chrome or Edge.)",
   warn: "Do not unplug the USB cable while writing.",
-  install: "Install", other: "日本語",
+  install: "Install",
+  releaseTitle: "Stable release", latest: "Latest", fallbackTitle: "Advanced / Hardware fallback",
+  rcTitle: "Release candidate", "rc-dual": "RC — dual core", "rc-single": "RC — single core",
+  "rc-dualTag": "release candidate, dual core", "rc-singleTag": "release candidate, single core",
+  rcWhy: "Preview of the next release, available for testing. Choose Standard to return to stable.",
   nightlyTitle: "Nightly (next)", "nightly-dual": "Nightly — dual core",
   "nightly-single": "Nightly — single core", "nightly-dualTag": "nightly, dual core", "nightly-singleTag": "nightly, single core",
-  nightlyWhy: "Development builds from next. Pick the clock on the FM-1 in the HOME-held menu's OVERCLOCK (320 MHz by default). Save a complete backup in the editor before installing. Choose Standard to return to the release.",
-  synthTitle: "Synth only (optional)", "synth-dual": "Synth only — dual core", "synth-single": "Synth only — single core",
-  "synth-dualTag": "synth only, dual core", "synth-singleTag": "synth only, single core",
-  synthWhy: "A one-track sound module for playing and recording into a computer: every synth and its sound editing, ARP, CHORD and SCALES, the effects (drive, chorus, delay, reverb) and stereo recording over USB audio. There is no sequencer, song or project saving; PLAY holds the ARP. Projects and presets saved on the FM-1 stay where they are and come back when you choose Standard and install again. Save a complete backup in the editor before installing.",
-  synthEditor: "Synth-only editor (sounds, effects and settings from the computer)",
+  nightlyWhy: "Development builds from next. Save a complete backup in the editor before installing. Choose Standard to return to the release.",
   dual: "Standard (dual core)", single: "Single core", dualTag: "standard", singleTag: "single core",
   singleWhy: "The single-core build is for FM-1s that crash with the standard build (a red MELODEE CRASH screen, freezes, or restarts into update mode). It never starts the FM-1's second core, which the official firmware does not use either. PROPHET then plays up to five voices instead of eight, and heavy FM6 and PROPHET sounds reach the CPU limit sooner. To go back, choose Standard and install again.",
   editor: "Editor (after installing: edit sounds and sequences from the computer)",
   direct: "Connect the USB cable directly to the computer. No probe or Transporter is needed.",
   brick: "If the FM-1 does not start after installation, follow the recovery steps for its USB mode (including official V15 recovery):",
   recoveryLink: "USB recovery instructions and downloads",
-  beta: "Melodee 1.0 is a field-testing release; please report problems on GitHub. The author accepts no responsibility if your FM-1 is damaged or misbehaves because of this custom firmware. Use it at your own risk.",
+  beta: "Please report Melodee problems on GitHub. The author accepts no responsibility if your FM-1 is damaged or misbehaves because of this custom firmware. Use it at your own risk.",
   back: "Get official FM-1 V15 from M-VAVE and select the unmodified FM-1.fwsc. The browser validates it locally; it is not sent to a server.",
   stockTitle: "Return to official V15", stockFile: "Official FM-1.fwsc", stockGo: "Back up and return to official V15",
   stockBackup: "Current music, saved music, sound banks, samples and settings are saved first. If backups are unavailable, update Melodee or choose to skip the backup and accept possible data loss. To restore an archive later, reinstall Melodee and use the editor.",
@@ -830,6 +840,7 @@ let lastKey = null, lastArg = "";
 function applyLang() {
   document.querySelectorAll("[data-t]").forEach((e) => { e.textContent = t(e.dataset.t); });
   $("stock-go").textContent = t($("stock-skip-backup").checked ? "stockGoNoBackup" : "stockGo");
+  if ($("release").options.length) releaseOptions();
   if (lastKey === "ready") ready();
   else if (lastKey) $("status").textContent = t(lastKey) + lastArg;
 }
@@ -837,24 +848,35 @@ applyLang();
 $("stock-skip-backup").addEventListener("change", applyLang);
 const sayK = (k, arg = "") => { lastKey = k; lastArg = arg; $("status").textContent = t(k) + arg; };
 const say = (txt) => { lastKey = null; $("status").textContent = txt; };
-const buildIds = ["dual", "single", "nightly-dual", "nightly-single", "synth-dual", "synth-single"];
+const buildIds = ["dual", "single", "rc-dual", "rc-single", "nightly-dual", "nightly-single"];
 const build = () => buildIds.find(k => $("build-" + k).checked) || "dual";
 const selection = () => {     /* the release, or a channel ("nightly-dual": meta.nightly's dual-core package) */
   const kind = build(), dash = kind.indexOf("-");
-  return dash < 0 ? {kind, channel: meta, key: kind} : {kind, channel: meta[kind.slice(0, dash)], key: kind.slice(dash + 1)};
+  return dash < 0 ? {kind, channel: (meta.releases || []).find(r => r.version === $("release").value) || meta, key: kind} : {kind, channel: meta[kind.slice(0, dash)], key: kind.slice(dash + 1)};
 };
 const ready = () => { lastKey = "ready"; $("status").textContent = `Melodee ${selection().channel.version} (${t(build() + "Tag")})`; };
-const log = (t) => { $("log").textContent += t + "\n"; };
+const log = (t) => { const box = $("log"); box.textContent += t + "\n"; box.scrollTop = box.scrollHeight; };
 let image = null;
-const meta = {"version": "1.3.1", "product": "FM-1_91031", "pkg": {"dual": "../../firmware/melodee-1.3.1.fwsc", "single": "../../firmware/melodee-1.3.1-1core.fwsc"}, "nightly": {"version": "next-a4b0d64", "product": "FM-1_900", "branch": "next", "commit": "a4b0d64ec9f69521dcd062ed6fe4f1af71c35c54", "builtAt": "2026-10-13T15:29:06Z", "pkg": {"dual": "../../firmware/melodee-nightly.fwsc", "single": "../../firmware/melodee-nightly-1core.fwsc"}}, "synth": {"version": "synth-4db4f4c", "product": "FM-1_900", "branch": "synth-only", "commit": "4db4f4c5f121f6f5cb9df9a20ec5c0ec56ffec94", "builtAt": "2026-10-12T05:53:02Z", "pkg": {"dual": "../../firmware/melodee-synth.fwsc", "single": "../../firmware/melodee-synth-1core.fwsc"}, "editor": "../synth-editor/"}};
+const meta = {"version": "1.3.1", "product": "FM-1_91031", "pkg": {"dual": "../../firmware/melodee-1.3.1.fwsc", "single": "../../firmware/melodee-1.3.1-1core.fwsc"}, "nightly": {"version": "next-7a97f69", "product": "FM-1_900", "branch": "next", "commit": "7a97f6936b691bc165ee5e1749f5c98dbeba658f", "builtAt": "2026-10-14T16:54:40Z", "pkg": {"dual": "../../firmware/melodee-nightly.fwsc", "single": "../../firmware/melodee-nightly-1core.fwsc"}}, "rc": null, "releases": [{"version": "1.3.1", "product": "FM-1_91031", "pkg": {"dual": "../../firmware/melodee-1.3.1.fwsc", "single": "../../firmware/melodee-1.3.1-1core.fwsc"}}]};
+function releaseOptions() {
+  const selected = $("release").value || meta.version;
+  $("release").replaceChildren(...(meta.releases || [meta]).map(r => {
+    const option = document.createElement("option");
+    option.value = r.version;
+    option.textContent = `${r.version === meta.version ? t("latest") + " · " : ""}v${r.version}`;
+    option.selected = r.version === selected;
+    return option;
+  }));
+}
+releaseOptions();
+$("rc-options").hidden = !meta.rc;
+if (meta.rc) $("rc-version").textContent = meta.rc.version;
 $("nightly-options").hidden = !meta.nightly;
 if (meta.nightly) $("nightly-info").textContent = `next · ${meta.nightly.commit.slice(0, 7)} · ${meta.nightly.builtAt}`;
-$("synth-options").hidden = !meta.synth;
-if (meta.synth) $("synth-info").textContent = `${meta.synth.branch} · ${meta.synth.commit.slice(0, 7)} · ${meta.synth.builtAt}`;
-const images = {};                // a build ("dual", "nightly-single", "synth-dual" ..) -> its package's image, each fetched once
+const images = {};                // a build ("dual", "nightly-single" ..) -> its package's image, each fetched once
 
 let writing = false, stock = null, stockFileEpoch = 0, buildEpoch = 0;
-const lockInstaller = (on) => { writing = on; $("go").disabled = on || !image; buildIds.forEach(k => { $("build-" + k).disabled = on; }); $("stock-go").disabled = on || !stock; $("stock-file").disabled = on; $("stock-recovery").disabled = on; $("stock-skip-backup").disabled = on; };
+const lockInstaller = (on) => { writing = on; $("release").disabled = on; $("go").disabled = on || !image; buildIds.forEach(k => { $("build-" + k).disabled = on; }); $("stock-go").disabled = on || !stock; $("stock-file").disabled = on; $("stock-recovery").disabled = on; $("stock-skip-backup").disabled = on; };
 window.addEventListener("beforeunload", (e) => { if (writing) { e.preventDefault(); e.returnValue = t("leave"); } });
 
 // the chosen build's package: Install stays off until it is loaded and checked
@@ -862,21 +884,27 @@ async function choose() {
   if (writing) return;
   if (!navigator.requestMIDIAccess) { sayK("nomidi"); return; }
   const {kind, channel, key} = selection(), epoch = ++buildEpoch;
+  const cacheKey = kind + ":" + (channel?.version || "") + ":" + (channel?.commit || "");
   image = null; $("go").disabled = true;
   try {
-    if (!images[kind]) {
-      if (!channel) throw new Error(kind.startsWith("synth-") ? "Synth only is not available yet" : "Nightly is not available yet");
+    if (!images[cacheKey]) {
+      if (!channel) throw new Error(kind.startsWith("rc-") ? "Release candidate is not available yet" : "Nightly is not available yet");
       const url = channel.pkg[key] + (channel.commit ? "?commit=" + channel.commit : ""), r = await fetch(url);
       if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
       const pkg = new Uint8Array(await r.arrayBuffer());
       if (productOf(pkg) !== channel.product) { if (epoch === buildEpoch) sayK("badpkg"); return; }
-      images[kind] = logicalImage(pkg);
+      images[cacheKey] = logicalImage(pkg);
     }
     if (epoch !== buildEpoch) return;
-    image = images[kind]; if (!writing) ready(); lockInstaller(writing);
+    image = images[cacheKey]; if (!writing) ready(); lockInstaller(writing);
   } catch (e) { if (epoch === buildEpoch) sayK("loadfail", e.message); }
 }
 buildIds.forEach(k => $("build-" + k).addEventListener("change", choose));
+$("release").addEventListener("change", () => {
+  if (writing) return;
+  if (build().includes("-")) $("build-dual").checked = true;
+  choose();
+});
 choose();
 
 $("go").addEventListener("click", async () => {
